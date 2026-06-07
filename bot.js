@@ -9,22 +9,63 @@ const botOptions = {
   version: '1.21.130'               // تحديد الإصدار المطابق لسيرفرك
 };
 
-// إنشاء الاتصال بالسيرفر
-const client = bedrock.createClient(botOptions);
+let client = null;
+let retryTimer = null;
 
-console.log(`جاري محاولة الاتصال بسيرفر البدروك إصدار ${botOptions.version}...`);
+function startBot() {
+  // إلغاء أي مؤقت قديم لمنع تداخل المحاولات
+  if (retryTimer) clearTimeout(retryTimer);
+  
+  console.log(`[اتصال] جاري محاولة الاتصال بسيرفر البدروك إصدار ${botOptions.version}...`);
 
-// عند نجاح دخول البوت بالكامل وبقائه مستقراً
-client.on('spawn', () => {
-  console.log(`[+] دخل ${botOptions.username} إلى السيرفر بنجاح وهو الآن متصل ومستقر بدون حزم زائدة!`);
-});
+  try {
+    client = bedrock.createClient(botOptions);
 
-// التعامل مع الطرد من السيرفر لقراءة الأسباب إن حدثت
-client.on('kick', (packet) => {
-  console.log(`[-] تم طرد البوت من السيرفر. السبب: ${packet.reason}`);
-});
+    // عند نجاح الدخول والرسوبن
+    client.on('spawn', () => {
+      console.log(`[+] دخل ${botOptions.username} إلى السيرفر بنجاح وهو الآن متصل ومستقر!`);
+    });
 
-// التعامل مع أخطاء الاتصال العامة
-client.on('error', (err) => {
-  console.error(`[خطأ] حدث خطأ في الاتصال:`, err);
-});
+    // في حال تم طرد البوت أثناء عمل السيرفر
+    client.on('kick', (packet) => {
+      console.log(`[-] تم طرد البوت من السيرفر. السبب: ${packet.reason}`);
+      triggerRetry();
+    });
+
+    // في حال كان السيرفر مطفأ (RakTimeout) أو حدث أي خطأ شبكة
+    client.on('error', (err) => {
+      console.error(`[تنبيه] السيرفر غير متاح حالياً أو مطفأ (${err.message})`);
+      triggerRetry();
+    });
+
+    // في حال انقطع الاتصال لأي سبب مفاجئ
+    client.on('close', () => {
+      console.log(`[!] انقطع الاتصال بالسيرفر بشكل مفاجئ.`);
+      triggerRetry();
+    });
+
+  } catch (error) {
+    console.error(`[خطأ غير متوقع]:`, error);
+    triggerRetry();
+  }
+}
+
+function triggerRetry() {
+  // إغلاق العميل الحالي بأمان لتنظيف الذاكرة
+  if (client) {
+    try { client.close(); } catch (e) {}
+    client = null;
+  }
+
+  // إذا كان هناك مؤقت يعمل بالفعل، لا ننشئ واحداً آخر لتفادي التكرار عشوائياً
+  if (retryTimer) return;
+
+  console.log(`⏳ سيقوم البوت بإعادة محاولة الاتصال تلقائياً بعد 30 ثانية...`);
+  retryTimer = setTimeout(() => {
+    retryTimer = null; // تصفير المؤقت للتحضير للمحاولة القادمة
+    startBot();
+  }, 30000); // 30000 مللي ثانية = 30 ثانية
+}
+
+// تشغيل البوت لأول مرة
+startBot();
