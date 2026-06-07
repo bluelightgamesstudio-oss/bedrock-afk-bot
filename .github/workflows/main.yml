@@ -2,12 +2,11 @@ name: Bedrock AFK Bot 24/7
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # ⏱️ حيلة ذكية: يعيد تشغيل الجوب تلقائياً كل ساعتين
+    - cron: '0 */2 * * *' # ⏱️ يعيد تشغيل الجوب تلقائياً كل ساعتين
   workflow_dispatch:      # 🔘 يسمح لك بتشغيل البوت يدوياً بضغطة زر في أي وقت
   push:
     branches: [ main, master ] # 🚀 يشتغل فوراً إذا قمت بتعديل الكود وعملت Commit
 
-# 🔥 سر الطبخة: يقوم بإلغاء البوت القديم وتشغيل الجديد فوراً لمنع الـ Timeout
 concurrency:
   group: bedrock-afk-bot
   cancel-in-progress: true
@@ -24,7 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # تم حذف سطر الكاش من هنا لحل المشكلة نهائياً
 
       - name: 📦 تثبيت مكتبة بروتوكول البدروك
         run: |
