@@ -27,4 +27,4 @@ jobs:
     - name: Execute Bedrock Bot
       run: node bot.js
       # نضع حداً أقصى لتشغيل الأكشن (25 دقيقة) حتى لا يستهلك ساعات GitHub المجانية بسرعة
-      timeout-minutes: 25
+      timeout-minutes: 10000
