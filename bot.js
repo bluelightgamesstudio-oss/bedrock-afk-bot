@@ -2,39 +2,39 @@ const { createClient } = require('bedrock-protocol');
 
 const botOptions = {
     host: 'Bluelightmine.aternos.me',
-    port: 51069, // تأكد أنه المنفذ الحالي من أترنوس
+    port: 51069,
     username: 'RealPlayer_AFK',
     offline: true,
     version: '1.26.20',
     device: { deviceOS: 1, deviceModel: 'Pixel 7' },
-    skipPing: true // تم التعديل لـ true لتجاوز الـ Time-out
+    skipPing: true
 };
 
+let activeClient = null;
 let movementInterval = null;
-let activeClient = null; // متغير لتتبع الاتصال النشط
+let retryDelay = 60000; // ابدأ بدقيقة انتظار
 
 function startBot() {
-    console.log('🔄 جاري محاولة إنشاء اتصال نظيف...');
+    console.log('🔄 محاولة اتصال جديدة...');
 
-    // 1. تنظيف أي عمليات سابقة (إجبار البوتات القديمة على الخروج)
+    // تنظيف تام لأي بقايا
     if (activeClient) {
         try { activeClient.close(); } catch (e) {}
         activeClient = null;
     }
     if (movementInterval) clearInterval(movementInterval);
 
-    // 2. إنشاء اتصال جديد
     activeClient = createClient(botOptions);
 
-    activeClient.on('connect', () => {
+    activeClient.once('connect', () => {
         console.log('✅ تم الاتصال بنجاح!');
+        retryDelay = 60000; // إعادة تعيين التأخير عند نجاح الاتصال
     });
 
-    activeClient.on('spawn', () => {
-        console.log('🎮 البوت دخل العالم!');
-        
+    activeClient.once('spawn', () => {
+        console.log('🎮 البوت دخل العالم ويقوم بالحركة...');
         movementInterval = setInterval(() => {
-            try {
+            if (activeClient) {
                 activeClient.write('player_auth_input', {
                     pitch: Math.random() * 90 - 45,
                     yaw: Math.random() * 360 - 180,
@@ -45,32 +45,24 @@ function startBot() {
                     interactionMode: 0,
                     transaction: { type: 0 }
                 });
-            } catch (err) {
-                console.log('⚠️ خطأ في الحركة.');
-                clearInterval(movementInterval);
             }
         }, 30000);
     });
 
-    const handleError = () => {
+    const handleError = (msg) => {
+        console.log(`⚠️ ${msg}. الانتظار لمدة ${retryDelay / 1000} ثانية قبل إعادة المحاولة.`);
         if (movementInterval) clearInterval(movementInterval);
-        setTimeout(startBot, 60000);
+        
+        setTimeout(() => {
+            // زيادة التأخير تدريجياً حتى 10 دقائق كحد أقصى لمنع الحظر
+            if (retryDelay < 600000) retryDelay += 60000;
+            startBot();
+        }, retryDelay);
     };
 
-    activeClient.once('error', (err) => {
-        console.log('⚠️ خطأ بروتوكول:', err.message);
-        handleError();
-    });
-
-    activeClient.once('kick', (packet) => {
-        console.log('❌ تم الطرد:', packet.reason || 'Unknown');
-        handleError();
-    });
-
-    activeClient.once('close', () => {
-        console.log('🔌 الاتصال مغلق، إعادة المحاولة في دقيقة...');
-        handleError();
-    });
+    activeClient.once('error', (err) => handleError('خطأ بروتوكول: ' + err.message));
+    activeClient.once('kick', (pkt) => handleError('تم الطرد: ' + (pkt.reason || 'Unknown')));
+    activeClient.once('close', () => handleError('الاتصال مغلق'));
 }
 
 process.on('uncaughtException', (err) => {
