@@ -5,7 +5,7 @@ const botOptions = {
   port: 51069,                      
   username: 'RealPlayer_AFK',       
   offline: true,                    
-  version: '1.21.130'               
+  version: '1.26.23'               
 };
 
 let client = null;
