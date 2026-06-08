@@ -2,10 +2,10 @@ name: Bedrock AFK Bot 24/7
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # ⏱️ يعيد تشغيل الجوب تلقائياً كل ساعتين
-  workflow_dispatch:      # 🔘 يسمح لك بتشغيل البوت يدوياً بضغطة زر في أي وقت
+    - cron: '0 */2 * * *' 
+  workflow_dispatch:      
   push:
-    branches: [ main, master ] # 🚀 يشتغل فوراً إذا قمت بتعديل الكود وعملت Commit
+    branches: [ main, master ]
 
 concurrency:
   group: bedrock-afk-bot
@@ -23,13 +23,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # تم حذف سطر الكاش من هنا لحل المشكلة نهائياً
 
-      - name: 📦 تثبيت مكتبة بروتوكول البدروك
+      - name: 📦 تثبيت المكتبات (Mineflayer + Bedrock)
         run: |
-          if [ ! -f package.json ]; then npm init -y; fi
-          npm install bedrock-protocol
+          # نقوم بتثبيت المكتبات المحددة في package.json مباشرة
+          npm install
 
       - name: 🤖 تشغيل بوت الأفروة المضاد للطرد
-        timeout-minutes: 340 # حد أمان لمنع تجاوز الـ 6 ساعات الصارمة لغيت هاب
+        timeout-minutes: 340 
         run: node bot.js
