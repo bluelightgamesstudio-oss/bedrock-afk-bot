@@ -1,34 +1,23 @@
-const { createClient } = require('bedrock-protocol');
+const mineflayer = require('mineflayer');
+const bedrock = require('mineflayer-bedrock');
 
-// هذا الإعداد هو "الوضع الآمن" للبوت
-const botOptions = {
-  host: 'Bluelightmine.aternos.me', 
-  port: 51069,                  
-  username: 'RealPlayer_AFK',        
-  offline: true,
-  // بدلاً من الاعتماد الكلي، سنحدد البروتوكول برقم ثابت يطابق 1.26
-  version: '1.26.20',
-  skipPing: true, // تخطي اختبار Ping لتجنب تعارض البروتوكولات في البداية
-};
+const bot = mineflayer.createBot({
+  host: 'Bluelightmine.aternos.me',
+  port: 51069,
+  username: 'RealPlayer_AFK',
+  version: '1.26.20', // المكتبة هنا تتعامل مع النسخة بمرونة أكبر
+  plugins: [bedrock.plugin] 
+});
 
-function connect() {
-  const client = createClient(botOptions);
+bot.on('spawn', () => {
+  console.log('البوت دخل العالم بنجاح عبر بروتوكول RakNet!');
+});
 
-  client.on('connect', () => console.log('تم الاتصال...'));
-  
-  client.on('spawn', () => console.log('البوت دخل العالم بنجاح!'));
+bot.on('error', (err) => {
+  console.error('خطأ في الاتصال:', err);
+});
 
-  // إخفاء أخطاء الـ Protocol غير الضرورية لضمان استمرار البوت
-  client.on('error', (err) => {
-    // إذا كان الخطأ مجرد "Undefined Packet"، تجاهله واستمر
-    if (err.message.includes('undefined')) {
-      console.log('تحذير: حزمة غير معروفة، جاري التجاوز...');
-    } else {
-      console.error('خطأ فادح:', err.message);
-    }
-  });
-
-  client.on('close', () => setTimeout(connect, 60000));
-}
-
-connect();
+bot.on('end', () => {
+  console.log('انقطع الاتصال، جاري إعادة المحاولة...');
+  setTimeout(() => process.exit(0), 1000); // إعادة تشغيل السكربت بالكامل لضمان نظافة الذاكرة
+});
