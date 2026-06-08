@@ -8,34 +8,21 @@ function startBot() {
         port: 51069,
         username: 'RealPlayer_AFK',
         offline: true,
-        version: '1.20.0',
-        // إضافة هذه الخصائص تجعل البوت يظهر كأنه نسخة ماينكرافت حقيقية من ويندوز
-        skipPing: false,
-        connectTimeout: 30000 
+        version: '1.26.20', // جرب وضع أحدث إصدار مرة أخرى
+        // التعديل السحري هنا:
+        // إضافة الـ Device Data ليوهم السيرفر أن البوت من جهاز محمول
+        device: {
+            deviceOS: 1, // 1 = Android
+            deviceModel: 'Pixel 7',
+        }
     });
 
-    client.on('connect', () => {
-        console.log('✅ تم الاتصال بنجاح ببروتوكول السيرفر!');
-    });
-
-    client.on('spawn', () => {
-        console.log('🎮 دخل البوت إلى العالم (Spawned)!');
-    });
-
-    client.on('error', (err) => {
-        // تجاهل أخطاء الحزم البسيطة التي يسببها أترنوس
-        console.log('⚠️ خطأ بروتوكول (يمكن تجاهله):', err.message);
-    });
+    client.on('connect', () => console.log('✅ تم الاتصال ببروتوكول السيرفر!'));
+    
+    client.on('spawn', () => console.log('🎮 البوت داخل العالم الآن!'));
 
     client.on('kick', (packet) => {
-        // تحسين عرض سبب الطرد
-        console.log('❌ تم الطرد من السيرفر. السبب:', packet.message || packet.reason || 'مجهول (Silent)');
-        console.log('⏳ إعادة المحاولة بعد 60 ثانية...');
-        setTimeout(startBot, 60000);
-    });
-
-    client.on('close', () => {
-        console.log('🔌 انقطع الاتصال، إعادة المحاولة...');
+        console.log('❌ تم الطرد. السبب:', packet.message || 'Silent Disconnect');
         setTimeout(startBot, 60000);
     });
 }
