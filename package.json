@@ -7,6 +7,6 @@
     "start": "node bot.js"
   },
   "dependencies": {
-    "bedrock-protocol": "^1.2.0"
+    "bedrock-protocol": "*"
   }
 }
