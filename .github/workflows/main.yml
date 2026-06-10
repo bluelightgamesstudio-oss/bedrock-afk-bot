@@ -1,39 +1,35 @@
-name: Bedrock AFK Bot 24/7
+name: Minecraft Bot 24/7
 
 on:
-  schedule:
-    - cron: '0 */2 * * *' # إعادة تشغيل كاملة كل ساعتين
-  workflow_dispatch:
   push:
-    branches: [ main, master ]
-
-concurrency:
-  group: bedrock-afk-bot
-  cancel-in-progress: true # يمنع تراكم البوتات في السيرفر
+    branches: [ main ]
+  schedule:
+    # يعمل تلقائياً كل 4 ساعات لتفادي الـ 6 ساعات كحد أقصى لـ GitHub
+    - cron: '0 */4 * * *'
+  workflow_dispatch: # يتيح لك تشغيله يدوياً أيضاً
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📁 سحب الكود من المستودع
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: 🟢 تهيئة بيئة Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
 
-      - name: 📦 تثبيت المكتبات
-        run: npm install
+    - name: Install Dependencies
+      run: npm install
 
-      - name: 🤖 تشغيل بوت الأفروة المضاد للطرد
-        timeout-minutes: 340 
-        # حلقة التكرار (while loop) تضمن إعادة تشغيل البوت فوراً إذا انهار الكود
-        run: |
-          while true; do
-            echo "🔄 بدء تشغيل البوت..."
-            node bot.js
-            echo "⚠️ البوت توقف، إعادة التشغيل بعد 10 ثوانٍ..."
-            sleep 10
-          done
+    - name: Cancel Previous Runs
+      # يقوم هذا الأكشن بإلغاء أي ووركفلاو قديم يعمل حالياً لنفس الرابط لمنع التداخل
+      uses: styfle/cancel-workflow-action@0.11.0
+      with:
+        access_token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Start Minecraft Bot
+      # تشغيل البوت، وسيستمر في العمل حتى تنتهي الـ 4 ساعات ويتم استبداله بالووركفلاو القادم
+      run: npm start
