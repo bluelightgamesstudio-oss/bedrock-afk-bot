@@ -3,12 +3,8 @@ name: Minecraft Bot 24/7
 on:
   push:
     branches: [ main ]
-  schedule:
-    # عامل أمان إضافي يعمل كل 4 ساعات في حال انقطاع اللوب لأي سبب طارئ
-    - cron: '0 */5 * * *'
-  workflow_dispatch: # يسمح بتشغيل اللوب يدوياً لأول مرة
+  workflow_dispatch: # الاعتماد الكلي على التشغيل الذاتي واليدوي لمنع التداخل
 
-# إعطاء الووركفلاو الصلاحيات الكاملة للكتابة وإدارة الأكشنز برمجياً
 permissions:
   actions: write
   contents: write
@@ -29,22 +25,30 @@ jobs:
     - name: Install Dependencies
       run: npm install
 
-    - name: Cancel Previous Runs
-      # يلغي تشغيل البوت القديم فوراً لمنع التداخل وظهور بوتين في العالم
-      uses: styfle/cancel-workflow-action@0.11.0
-      with:
-        access_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Force Cancel All Previous Runs
+      # استخدام أداة GitHub الرسمية لقتل أي ووركفلاو قديم يعمل حالياً فوراً لمنع التضاعف
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "جاري فحص وإغلاق أي مهمة قديمة تعمل حالياً لضمان بقاء بوت واحد..."
+        active_runs=$(gh run list --workflow=main.yml --status=in_progress --json databaseId --jq '.[].databaseId')
+        for run_id in $active_runs; do
+          if [ "$run_id" != "$GITHUB_RUN_ID" ]; then
+            echo "إغلاق المهمة القديمة ذات الرقم: $run_id"
+            gh run cancel $run_id
+          fi
+        done
 
     - name: Start Minecraft Bot
-      # تشغيل البوت لمدة 240 دقيقة (4 ساعات متواصلة) ثم الانتقال للخطوة التالية
-      timeout-minutes: 380
+      # تثبيت الوقت على 230 دقيقة (أقل من 4 ساعات بقليل) كأمان تام قبل تدوير اللوب
+      timeout-minutes: 230
       run: npm start
-      continue-on-error: true # لضمان استمرار السكربت حتى لو حدث خطأ في اتصال البوت
+      continue-on-error: true
 
     - name: Trigger Next Loop (Chain Workflow)
-      # هذه الخطوة تستدعي غيتهاب لبدء ووركفلاو جديد فوراً قبل إغلاق الحالي
       if: always()
       run: |
+        echo "بدء مهمة جديدة وتمرير اللوب..."
         curl -X POST \
           -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
