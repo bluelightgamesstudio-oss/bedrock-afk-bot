@@ -15,12 +15,15 @@ function createBot() {
         const client = bedrock.createClient(options);
         let currentTick = 0;
         let afkInterval = null;
-        let isDisconnected = false; // لمنع تكرار دالة الفصل
+        let isDisconnected = false; 
 
         client.on('join', () => {
             console.log("تم دخول البوت إلى سيرفر البيدروك بنجاح وهو الآن داخل العالم!");
             
             let moveDirection = 1; 
+
+            // في حال وجود مؤقت قديم معلق بالصدفة، يتم مسحه فوراً
+            if (afkInterval) clearInterval(afkInterval);
 
             afkInterval = setInterval(() => {
                 if ((client.status === 'playing' || client.state === 'play') && !isDisconnected) {
@@ -60,12 +63,11 @@ function createBot() {
             if (packet.message) console.log(`[شات السيرفر]: ${packet.message}`);
         });
 
-        // دالة موحدة للتعامل مع الفصل ومنع التكرار والتداخل
         const handleDisconnect = (reason) => {
             if (isDisconnected) return; 
             isDisconnected = true;
 
-            console.log(`تم قطع الاتصال بالسيرفر! (السبب: ${reason}). جاري التنظيف...`);
+            console.log(`تم قطع الاتصال بالسيرفر! (السبب: ${reason}). جاري التنظيف وإلغاء الجلسة...`);
             
             if (afkInterval) clearInterval(afkInterval);
             
@@ -73,8 +75,7 @@ function createBot() {
                 client.end();
             } catch (e) {}
 
-            // الانتظار 30 ثانية كاملة ليتأكد السيرفر من خروج البوت تماماً ومسحه من الذاكرة قبل الدخول مجدداً
-            console.log("سيتأخر بدء الاتصال الجديد لـ 30 ثانية لتفادي مشكلة البوت المزدوج...");
+            console.log("الانتظار 30 ثانية قبل إعادة المحاولة لمنع تكدس الاتصالات...");
             setTimeout(createBot, 30000);
         };
 
